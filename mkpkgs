@@ -1,0 +1,87 @@
+#!/bin/bash
+set -e
+
+source envars.sh $1
+start=$PWD
+log_dir=${start}/log
+
+BOLD () { echo -e "\e[0;1m$1"; }
+BLUE () { echo -e "\e[1;34m$1"; }
+RED () { echo -e "\e[1;31m$*"; }
+WHITE () { echo -e "\e[00m$1"; }
+
+packages=(
+	#gettext
+	gzip
+	zlib
+	brotli
+	bzip2
+	lz4
+	xz
+	zstd
+	openssl
+	libarchive libpsl libssh2
+	nghttp2 nghttp3 ngtcp2
+	pcre2
+	grep sed
+	expat sqlite libgnurx file
+	curl wget
+	7zip aria2
+	busybox ntldd binutils
+)
+
+check_dep() {
+	local deps=()
+	local p pkg=$1; shift
+	for p; do
+		[[ -f ${start}/${p}.builded ]] || deps+=($p)
+	done
+	if [[ -n ${deps[@]} ]]; then
+		echo "package: $(BOLD $pkg) Does't resolved dependencies:: $(RED ${deps[*]})"
+		echo "$(RED Skip build \!)"
+		SKIP_BUILD=1
+	fi
+}
+
+install -d ${log_dir}
+for target in ${packages[@]}; do
+	echo $(BOLD --------------------------------------------------------------------------------)$(WHITE)
+	echo $(BOLD Building) target $(BLUE ${target})$(BOLD)$(WHITE)
+	cd ${start}/${target}
+	[ ! -f DEP ] || check_dep ${target} $(<DEP)
+	if ! [[ $SKIP_BUILD ]]; then
+		bash build.sh > ${log_dir}/${target}.log 2>&1
+		touch ${start}/${target}.builded
+		echo $(BOLD Target) $(BLUE ${target}) $(WHITE)$(BOLD OK)
+	fi
+	SKIP_BUILD=
+	echo --------------------------------------------------------------------------------$(WHITE)
+done
+
+case "$2" in arch|gcc|llvm) SUFFIX=-$2;; esac
+if [[ -n $(find /usr/${TARGET}/bin -name \*.dll) ]]; then
+	DLL="/usr/$TARGET/bin/*.dll"
+fi
+
+cd ${start}
+install -d rel{,ease}
+cp -r ${PREFIX}/{bin,share} .
+${TARGET}-strip -s bin/*.{dll,exe}
+(cd ${PREFIX}; tar cf - . $DLL|xz -T0) > all-$ARCH${SUFFIX}.tar.xz
+(cd ${log_dir}; tar cf - .| xz -T0) > logs-$ARCH${SUFFIX}.tar.xz
+mv share bin/*.{dll,exe} release
+curl "https://curl.se/ca/cacert.pem" -Lo release/cert.pem
+(cd release
+if [ -f file.exe ]; then
+	mkdir bin
+	mv file.exe bin
+	cat > file.cmd <<-"EOF"
+		@echo off
+		%~dp0bin\file.exe -m %~dp0share\misc\magic.mgc %*
+	EOF
+fi
+if [ -f 7zCon.exe ]; then
+	mv 7zCon.{exe,sfx}
+fi
+7z a ../bin-$ARCH${SUFFIX}.7z . $DLL)
+cp *.xz *.7z rel

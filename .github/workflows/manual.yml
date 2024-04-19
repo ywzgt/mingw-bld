@@ -1,0 +1,29 @@
+name: manual
+on:
+  workflow_dispatch:
+
+jobs:
+  manual:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions: write-all
+    strategy:
+      matrix:
+        tools: [arch, gcc, llvm]
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+    - name: Preparing rootfs
+      run: bash prepare x86_64 ${{ matrix.tools }} manual
+    - name: Gh login
+      run: echo ${{ secrets.GITHUB_TOKEN }} | gh auth login --with-token; gh auth setup-git; gh auth status
+    - name: Debugging with SSH
+      run: curl -sL https://gist.githubusercontent.com/$GITHUB_ACTOR/8210020cdb17776e9bbfa9048a0d9609/raw | bash
+      env:
+        NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
+        USER_SSH_KEY: ${{ secrets.USER_SSH_KEY }}
+    - name: Don't kill instace
+      run: while true; do echo -e "$(free -h; df -Th)\n"; sleep 350; done
+    - name: Setup tmate ssh session
+      if: failure()
+      uses: mxschmitt/action-tmate@v3

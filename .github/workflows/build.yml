@@ -1,0 +1,37 @@
+name: build
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    strategy:
+      matrix:
+        arch: [i686, x86_64]
+        tools: [arch, gcc, llvm]
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+    - name: Preparing Linux rootfs
+      run: bash prepare ${{ matrix.arch }} ${{ matrix.tools }}
+    - name: Build packages
+      run: ./chroot_run bash mkpkgs ${{ matrix.arch }} ${{ matrix.tools }}
+    - name: Generate version
+      run: ln -sv rootfs/build/rel .; echo "TAG_VERSION=$(date +%Y%m%d)" >> $GITHUB_ENV
+    - name: Upload to Releases
+      if: env.TAG_VERSION
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ env.TAG_VERSION }}
+        files: rel/*
+        fail_on_unmatched_files: true
+
+    - name: Gh login
+      if: ${{ failure() }}
+      run: echo ${{ secrets.GITHUB_TOKEN }} | gh auth login --with-token; gh auth setup-git; gh auth status
+    - name: Setup tmate ssh session
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true

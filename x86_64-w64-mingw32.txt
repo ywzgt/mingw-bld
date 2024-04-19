@@ -1,0 +1,26 @@
+[constants]
+prefix = '/mingw-x86_64'
+
+[binaries]
+c = 'x86_64-w64-mingw32-cc'
+cpp = 'x86_64-w64-mingw32-c++'
+ar = 'x86_64-w64-mingw32-ar'
+strip = 'x86_64-w64-mingw32-strip'
+windres = 'x86_64-w64-mingw32-windres'
+
+[host_machine]
+system = 'windows'
+kernel = 'nt'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+
+[properties]
+sys_root = prefix
+pkg_config_libdir = prefix + '/lib/pkgconfig'
+needs_exe_wrapper = true
+
+[built-in options]
+default_library = 'both'
+
+# vim: ft=meson

@@ -1,0 +1,8 @@
+openssl
+zlib
+zstd
+brotli
+libpsl
+libssh2
+nghttp2
+nghttp3
