@@ -69,10 +69,10 @@ sudo install -do $(id -u) -g $(id -g) rootfs/build
 mv ../bld/* rootfs/build
 
 if [[ $ARCH_ROOTFS ]]; then
-	wget -nv -c https://mirrors.edge.kernel.org/archlinux/iso/latest/archlinux-bootstrap-x86_64.tar.gz{,.sig}
+	wget -nv -c https://mirrors.edge.kernel.org/archlinux/iso/latest/archlinux-bootstrap-x86_64.tar.zst{,.sig}
 	gpg --verify --auto-key-retrieve --keyserver hkps://keyserver.ubuntu.com \
-		archlinux-bootstrap-x86_64.tar.gz.sig
-	sudo tar -xf archlinux-bootstrap-x86_64.tar.gz --strip-components=1 -C rootfs
+		archlinux-bootstrap-x86_64.tar.zst.sig
+	sudo tar -xf archlinux-bootstrap-x86_64.tar.zst --strip-components=1 -C rootfs
 	sudo sed -i '/kernel.org/s/^#//' rootfs/etc/pacman.d/mirrorlist
 	sudo sed -i 's/CheckSpace/#&/;/^#\(Color\|VerbosePkgLists\|ParallelDownloads\)/s/^#//' rootfs/etc/pacman.conf
 else
